@@ -3,8 +3,11 @@ import java.util.List;
 
 public class Node {
 
+    Node parent;
+    boolean in_the_parentheses = false;
+    Operators role;
 
-    String role;
+    String value;
     Node left;
     Node right;
 }
