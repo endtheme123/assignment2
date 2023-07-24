@@ -6,22 +6,26 @@ import java.util.stream.Collectors;
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.stream;
 
-public class KnowledgeBase {
+public class KnowledgeBase implements Cloneable {
 
-    ArrayList<String> given;
+    ArrayList<String> symbol_list;
+
+
+
     ArrayList<ArrayList<Node>> logic_trees;
-    ArrayList<Node> truth_table;
+
     ArrayList<Vertex> KB;
     String filename;
     String target;
     String[] operators;
+    Node KB_root;
 
     public KnowledgeBase(String filename) {
-        this.truth_table = new ArrayList<Node>();
+
         this.KB = new ArrayList<>();
-        this.given = new ArrayList<>();
+        this.symbol_list = new ArrayList<>();
         this.filename = filename;
-        operators = new String[]{"=>", "<=>", "&", "||", "\\)", "\\("};
+        operators = new String[]{"\\=\\>", "\\<\\=\\>", "\\&", "\\|\\|", "\\)", "\\("};
         GenerateKB(filename);
     }
 
@@ -42,11 +46,14 @@ public class KnowledgeBase {
                 for (String o : this.operators) {
                     KB_input_1 = KB_input_1.replaceAll(o, ";").replaceAll("~", "");
                 }
+                System.out.println(KB_input_1);
 
                 ArrayList<String> entities = new ArrayList<>(Arrays.asList(KB_input_1.split(";")));
                 entities.remove(entities.size() - 1);
                 ArrayList<String> entities_list = new ArrayList<>(new HashSet<String>(entities));
                 for (String entity : entities_list) {
+                    System.out.println(entity);
+                    this.symbol_list.add(entity);
                     Vertex en = new Vertex();
                     en.value = entity;
                     KB.add(en);
@@ -56,9 +63,7 @@ public class KnowledgeBase {
 
 //                break the implication into literals
                 ArrayList<String> KB_input_splited = new ArrayList<>(Arrays.asList(KB_input.split(";")));
-                Node root = new Node();
-                root.role = Operators.AND;
-                root.value = "&";
+
                 this.logic_trees = new ArrayList<>();
                 for (String input : KB_input_splited) {
                     ArrayList<Node> logic_tree = new ArrayList<>();
@@ -145,13 +150,15 @@ public class KnowledgeBase {
                     logic_trees.add(logic_tree);
                 }
 //                System.out.print(logic_trees.get(2).get(0).role);
+                ArrayList<Node> root_list = new ArrayList<>();
                 for (ArrayList<Node> tree : logic_trees) {
                     Node aroot = KB_tree_parse(tree);
-//                    for (Node n : tree) {
-//                        System.out.print(n.value);
-//                    }
-                    System.out.println(tree_print(aroot));
+                    root_list.add(aroot);
+
                 }
+                this.KB_root = CNF_tree_parse(root_list);
+                System.out.println(tree_print(KB_root));
+
 
             }
 
@@ -192,23 +199,17 @@ public class KnowledgeBase {
     }
 
     String tree_print (Node root) {
-        String s = "";
-        Stack<Node> stack = new Stack<>();
-        stack.push(root);
-        s = root.value;
-        while(!stack.empty()) {
-            Node current = stack.pop();
-            if(!(current.left==null )) {
-                stack.push(current.left);
-                s = current.left.value + s;
-            }
-            if(!(current.right==null )) {
-                stack.push(current.right);
-                s = s + current.right.value;
-            }
+        String s = root.value;
+        if(root.left != null) {
+            s = tree_print(root.left) + s;
         }
-
+        if(root.right != null) {
+            s = s + tree_print(root.right);
+        }
         return s;
+
+
+
     }
 
     Node KB_tree_parse(ArrayList<Node> tree) {
@@ -218,6 +219,7 @@ public class KnowledgeBase {
         int i = 0;
         while (i < tree.size()) {
             if(tree.get(i).role.equals(Operators.RIGHT_BRAC)){
+                System.out.println("recursive end");
                 break;
             }
             System.out.println("at least working");
@@ -225,10 +227,24 @@ public class KnowledgeBase {
 
                 i++;
                 ArrayList<Node> subtree = new ArrayList<>(tree.subList(i, tree.size()));
+                System.out.println("recursive time");
                 Node temp = KB_tree_parse(subtree);
+                tree.subList(i-1,tree.size()).clear();
+                tree.addAll(subtree);
+                System.out.print("tree after the recursive: ");
+                for(Node n: tree) {
+                    System.out.print(n.value);
+                }
+                System.out.print(";");
                 tree.subList(i,i+tree_size(temp)).clear();
                 tree.set(i-1,temp);
-                System.out.println(tree.get(i).value);
+                System.out.print("tree after the sublisted: ");
+                for(Node n: tree) {
+                    System.out.print(n.value);
+                }
+                System.out.print(";");
+                System.out.println(tree_print(temp));
+                System.out.println(tree.get(i-1).value);
                 if(subroot.role.equals(Operators.INIT)) {
 
                     current = temp;
@@ -300,5 +316,66 @@ public class KnowledgeBase {
         return subroot;
     }
 
+    Node CNF_tree_parse(ArrayList<Node> clauses) {
+        if(clauses.size() == 1) {
+            return clauses.get(0);
+        }
+        Node root = new Node();
+        root.left = clauses.get(0);
+        ArrayList<Node> forward = new ArrayList<>(clauses.subList(1,clauses.size()));
+        root.right = CNF_tree_parse(forward);
+        root.role = Operators.AND;
+        root.value = "&";
+        root.right.parent = root;
+        root.left.parent = root;
+        return root;
+    }
+
+    void add_value(String variable, boolean value) {
+
+        Stack<Node> stack = new Stack<>();
+        stack.push(this.KB_root);
+        while(!stack.empty()) {
+            Node current = stack.pop();
+            if(current.value.equals(variable)) {
+                current.lvalue = value;
+            }
+            if(!(current.left==null )) {
+                stack.push(current.left);
+
+            }
+            if(!(current.right==null )) {
+                stack.push(current.right);
+
+            }
+        }
+
+
+    }
+
+    boolean KB_checking(Node current) {
+        if(current.role.equals(Operators.NOT)) {
+            return !KB_checking(current.right);
+        }
+        if(current.role.equals(Operators.AND)) {
+            return KB_checking(current.left) & KB_checking(current.right);
+        }
+        if(current.role.equals(Operators.OR)) {
+            return KB_checking(current.left) || KB_checking(current.right);
+        }
+        if(current.role.equals(Operators.IMPLICATION)) {
+            return !KB_checking(current.left) || KB_checking(current.right);
+        }
+        if(current.role.equals(Operators.BICON)) {
+            return (!KB_checking(current.left) || KB_checking(current.right)) & (!KB_checking(current.right) || KB_checking(current.left));
+        }
+        return current.lvalue;
+    }
+
+
+    public KnowledgeBase fake_clone(){
+        KnowledgeBase clone = new KnowledgeBase(filename);
+        return clone;
+    }
 
 }

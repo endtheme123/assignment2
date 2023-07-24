@@ -4,7 +4,7 @@ import java.util.List;
 public class Node {
 
     Node parent;
-    boolean in_the_parentheses = false;
+    boolean lvalue = false;
     Operators role;
 
     String value;

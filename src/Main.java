@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 // Press Shift twice to open the Search Everywhere dialog and type `show whitespaces`,
 // then press Enter. You can now see whitespace characters in your code.
 public class Main {
@@ -7,5 +9,9 @@ public class Main {
         Test t = new Test();
         System.out.println(t.test());
         KnowledgeBase kb = new KnowledgeBase("D:\\sem3-2\\cos30019\\ass2\\assignment2\\test_HornKB.txt");
+        InferenceEngine e = new InferenceEngine(kb,"TT");
+        ArrayList<String> result = e.get_result();
+        String output = String.join("", result);
+        System.out.println(output);
     }
 }
