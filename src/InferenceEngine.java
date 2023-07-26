@@ -13,6 +13,8 @@ public class InferenceEngine {
         this.kb = kb;
         Algorithm TT = new TT(this.kb);
         algo_list.add(TT);
+        Algorithm FC = new FC(this.kb);
+        algo_list.add(FC);
         this.main_algo = algo_lookup(algo_name);
 
     }
