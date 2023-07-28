@@ -6,12 +6,30 @@ public class Main {
     public static void main(String[] args) {
         // Press Alt+Enter with your caret at the highlighted text to see how
         // IntelliJ IDEA suggests fixing it.
+
+        String filepath = "";
+        String algo_name = "";
+
+
+//        validate the input values before running the program
+        if (args.length ==2) {
+
+            filepath = args[1];
+            algo_name = args[0];
+
+
+
+        } else {
+            System.out.println("invalid syntax");
+            return;
+        }
         Test t = new Test();
         System.out.println(t.test());
-        KnowledgeBase kb = new KnowledgeBase("D:\\sem3-2\\cos30019\\ass2\\assignment2\\test_HornKB.txt");
-        InferenceEngine e = new InferenceEngine(kb,"TT");
+        KnowledgeBase kb = new KnowledgeBase(filepath);
+        InferenceEngine e = new InferenceEngine(kb,algo_name);
         ArrayList<String> result = e.get_result();
         String output = String.join("", result);
+
         System.out.println(output);
     }
 }

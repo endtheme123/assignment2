@@ -2,11 +2,13 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 
 public class TT extends Algorithm{
+    LinkedHashMap<String, Boolean> truth_model;
     int yes_count;
     public TT (KnowledgeBase kb) {
         super(kb);
         super.name = "TT";
         yes_count = 0;
+        this.truth_model = new LinkedHashMap<>();
     }
 
     @Override
@@ -43,6 +45,8 @@ public class TT extends Algorithm{
                 for(String key: model.keySet()) {
                     if(key.equals(key)){
                         this.yes_count ++;
+                        System.out.println("this world is true");
+                        truth_model = model;
                         return true;
                     } else {
                         return false;

@@ -30,14 +30,26 @@ public class BC extends Algorithm {
     }
 
     public boolean BC_entailment(KnowledgeBase kb, String target) {
-
-
-        path = path + target + ";";
-        for (Clause c : kb.clause_list) {
-            if (c.conclusion.value.equals(p)) {
-
+        path =  target + ";" + path;
+        for(Node t:kb.truth_list) {
+            if (target.equals(t.value)) {
+                return true;
             }
         }
+
+        for (Clause c : kb.clause_list) {
+            if (c.conclusion.value.equals(target)) {
+                Boolean truth = true;
+                for(String premise_truth: c.premises) {
+                    truth = truth & BC_entailment(kb, premise_truth);
+                }
+                return truth;
+            }
+        }
+
+        return false;
+
+
 
 
     }

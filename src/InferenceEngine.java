@@ -28,6 +28,7 @@ public class InferenceEngine {
         if(main_algo!= null) {
             result = main_algo.calculate_result();
 
+
         } else {
             result = new ArrayList<>();
             result.add("there is no matching algorithm name");
