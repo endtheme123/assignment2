@@ -23,8 +23,7 @@ public class Main {
             System.out.println("invalid syntax");
             return;
         }
-        Test t = new Test();
-        System.out.println(t.test());
+
         KnowledgeBase kb = new KnowledgeBase(filepath);
         InferenceEngine e = new InferenceEngine(kb,algo_name);
         ArrayList<String> result = e.get_result();

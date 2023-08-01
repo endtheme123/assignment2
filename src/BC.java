@@ -13,7 +13,7 @@ public class BC extends Algorithm {
     public ArrayList<String> calculate_result() {
         ArrayList<String> result = new ArrayList<>();
 
-        if (BC_entailment(this.kb, this.kb.target)) {
+        if (BC_entailment(this.kb, this.kb.target.value)) {
             result.add("YES");
             result.add(": ");
             result.add(path);
