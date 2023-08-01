@@ -1,5 +1,6 @@
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -16,18 +17,19 @@ public class KnowledgeBase {
     ArrayList<Clause> clause_list;
 
     String filename;
-    String target;
+    Node target;
     String[] operators;
     Node KB_root;
+    ArrayList<Integer> remove_count;
 
     public KnowledgeBase(String filename) {
         this.logic_trees = new ArrayList<>();
-
+        this.remove_count = new ArrayList<>();
         this.symbol_list = new ArrayList<>();
         this.clause_list = new ArrayList<>();
         this.truth_list = new ArrayList<>();
         this.filename = filename;
-        operators = new String[]{"\\=\\>", "\\<\\=\\>", "\\&", "\\|\\|", "\\)", "\\("};
+        operators = new String[]{ "\\<\\=\\>","\\=\\>", "\\&", "\\|\\|", "\\)", "\\("};
         GenerateKB(filename);
     }
 
@@ -42,19 +44,25 @@ public class KnowledgeBase {
             if (isTell.trim().equals("TELL")) {
 
                 String KB_input = myReader.nextLine().replaceAll(" ", "");
-                System.out.println(KB_input);
+
 //                get the list of entities and initialize graph
                 String KB_input_1 = KB_input;
                 for (String o : this.operators) {
                     KB_input_1 = KB_input_1.replaceAll(o, ";").replaceAll("~", "");
                 }
-                System.out.println(KB_input_1);
+                while(KB_input_1.contains(";;")) {
+                    KB_input_1 = KB_input_1.replaceAll(";;",";");
+                }
+                while(KB_input_1.charAt(0) == ';') {
+                    KB_input_1 = KB_input_1.substring(1,KB_input_1.length()-1);
+                }
+
 
                 ArrayList<String> entities = new ArrayList<>(Arrays.asList(KB_input_1.split(";")));
-                entities.remove(entities.size() - 1);
+//                entities.remove(entities.size() - 1);
                 ArrayList<String> entities_list = new ArrayList<>(new HashSet<String>(entities));
                 for (String entity : entities_list) {
-                    System.out.println(entity);
+
                     this.symbol_list.add(entity);
 
                 }
@@ -66,90 +74,10 @@ public class KnowledgeBase {
 
 
                 for (String input : KB_input_splited) {
-                    ArrayList<Node> logic_tree = new ArrayList<>();
-                    int i = 0;
-                    System.out.println(input);
-
-                    while (i < input.length()) {
-                        Node node = new Node();
-                        switch (input.charAt(i)) {
-                            case ('('):
-                                node.role = Operators.LEFT_BRAC;
-                                node.value = "(";
-                                logic_tree.add(node);
-                                i++;
-                                break;
-                            case (')'):
-                                node.role = Operators.RIGHT_BRAC;
-                                node.value = ")";
-                                logic_tree.add(node);
-                                i++;
-                                break;
-                            case ('&'):
-                                node.role = Operators.AND;
-                                node.value = "&";
-                                logic_tree.add(node);
-                                i++;
-                                break;
-
-                            case ('~'):
-                                node.role = Operators.NOT;
-                                node.value = "~";
-                                logic_tree.add(node);
-                                i++;
-                                break;
-                            case ('|'):
-
-                                node.role = Operators.OR;
-                                node.value = "||";
-                                logic_tree.add(node);
-                                i++;
-                                i++;
-                                break;
-                            case ('='):
-
-
-                                node.role = Operators.IMPLICATION;
-                                node.value = "=>";
-
-                                logic_tree.add(node);
-                                i++;
-                                i++;
-                                break;
-
-                            case ('<'):
-
-
-                                node.role = Operators.BICON;
-                                node.value = "<=>";
-
-                                logic_tree.add(node);
-                                i++;
-                                i++;
-                                i++;
-                                break;
-                            default:
-                                if (Character.isLetter(input.charAt(i))) {
-                                    int endPosition = i + 1;
-                                    while (endPosition < input.length() && Character.isLetterOrDigit(input.charAt(endPosition))) {
-                                        endPosition++;
-                                    }
-                                    String variable = input.substring(i, endPosition);
-                                    node.role = Operators.SENTENCE;
-                                    node.value = variable;
-                                    logic_tree.add(node);
-                                    i = endPosition;
-                                } else {
-                                    throw new IllegalArgumentException("Invalid character in expression: " + input.charAt(i));
-                                }
-                                break;
-                        }
-
-
-                    }
+                    ArrayList<Node> logic_tree = reading(input);
                     logic_trees.add(logic_tree);
                 }
-//                System.out.print(logic_trees.get(2).get(0).role);
+
                 ArrayList<Node> root_list = new ArrayList<>();
                 for (ArrayList<Node> tree : logic_trees) {
                     Node aroot = KB_tree_parse(tree);
@@ -187,7 +115,7 @@ public class KnowledgeBase {
                 }
 
                 this.KB_root = CNF_tree_parse(root_list);
-                System.out.println(tree_print(KB_root));
+
 
 
             }
@@ -195,7 +123,20 @@ public class KnowledgeBase {
 
             String isAsk = myReader.nextLine();
             if (isAsk.trim().equals("ASK")) {
-                this.target = myReader.nextLine().replaceAll(" ", "");
+                String KB_ask = myReader.nextLine().replaceAll(" ", "");
+                ArrayList<String> KB_ask_splited = new ArrayList<>(Arrays.asList(KB_ask.split(";")));
+                ArrayList<ArrayList<Node>> logic_trees_ask = new ArrayList<>();
+                for (String input : KB_ask_splited) {
+                    ArrayList<Node> logic_tree = reading(input);
+                    logic_trees_ask.add(logic_tree);
+                }
+                ArrayList<Node> ask_list = new ArrayList<>();
+                for (ArrayList<Node> tree : logic_trees_ask) {
+                    Node aroot = KB_tree_parse(tree);
+                    ask_list.add(aroot);
+
+                }
+                this.target = CNF_tree_parse(ask_list);
             }
 
 
@@ -209,25 +150,92 @@ public class KnowledgeBase {
         }
     }
 
-    int tree_size(Node root) {
-        int i = 1;
-        Stack<Node> stack = new Stack<>();
-        stack.push(root);
-        while (!stack.empty()) {
-            Node current = stack.pop();
-            if (!(current.left == null)) {
-                stack.push(current.left);
-                i++;
+
+
+    ArrayList<Node> reading(String input) {
+        ArrayList<Node> logic_tree = new ArrayList<>();
+        int i = 0;
+
+
+        while (i < input.length()) {
+            Node node = new Node();
+            switch (input.charAt(i)) {
+                case ('('):
+                    node.role = Operators.LEFT_BRAC;
+                    node.value = "(";
+                    logic_tree.add(node);
+                    i++;
+                    break;
+                case (')'):
+                    node.role = Operators.RIGHT_BRAC;
+                    node.value = ")";
+                    logic_tree.add(node);
+                    i++;
+                    break;
+                case ('&'):
+                    node.role = Operators.AND;
+                    node.value = "&";
+                    logic_tree.add(node);
+                    i++;
+                    break;
+
+                case ('~'):
+                    node.role = Operators.NOT;
+                    node.value = "~";
+                    logic_tree.add(node);
+                    i++;
+                    break;
+                case ('|'):
+
+                    node.role = Operators.OR;
+                    node.value = "||";
+                    logic_tree.add(node);
+                    i++;
+                    i++;
+                    break;
+                case ('='):
+
+
+                    node.role = Operators.IMPLICATION;
+                    node.value = "=>";
+
+                    logic_tree.add(node);
+                    i++;
+                    i++;
+                    break;
+
+                case ('<'):
+
+
+                    node.role = Operators.BICON;
+                    node.value = "<=>";
+
+                    logic_tree.add(node);
+                    i++;
+                    i++;
+                    i++;
+                    break;
+                default:
+                    if (Character.isLetter(input.charAt(i))) {
+                        int endPosition = i + 1;
+                        while (endPosition < input.length() && Character.isLetterOrDigit(input.charAt(endPosition))) {
+                            endPosition++;
+                        }
+                        String variable = input.substring(i, endPosition);
+                        node.role = Operators.SENTENCE;
+                        node.value = variable;
+                        logic_tree.add(node);
+                        i = endPosition;
+                    } else {
+                        throw new IllegalArgumentException("Invalid character in expression: " + input.charAt(i));
+                    }
+                    break;
             }
-            if (!(current.right == null)) {
-                stack.push(current.right);
-                i++;
-            }
+
+
         }
-
-        return i;
+        return logic_tree;
     }
-
     String tree_print(Node root) {
         String s = root.value;
         if (root.left != null) {
@@ -243,38 +251,36 @@ public class KnowledgeBase {
 
 
     Node KB_tree_parse(ArrayList<Node> tree) {
+        this.remove_count.clear();
         Node subroot = new Node();
         subroot.role = Operators.INIT;
         Node current = subroot;
         int i = 0;
         while (i < tree.size()) {
+            this.remove_count.add(i);
             if (tree.get(i).role.equals(Operators.RIGHT_BRAC)) {
-                System.out.println("recursive end");
+
                 break;
             }
-            System.out.println("at least working");
+
+
             if (tree.get(i).role.equals(Operators.LEFT_BRAC)) {
 
                 i++;
                 ArrayList<Node> subtree = new ArrayList<>(tree.subList(i, tree.size()));
-                System.out.println("recursive time");
+
                 Node temp = KB_tree_parse(subtree);
                 tree.subList(i - 1, tree.size()).clear();
                 tree.addAll(subtree);
-                System.out.print("tree after the recursive: ");
-                for (Node n : tree) {
-                    System.out.print(n.value);
-                }
-                System.out.print(";");
-                tree.subList(i, i + tree_size(temp)).clear();
+
+
+
+
+                tree.subList(i, i + remove_count.get(remove_count.size()-1)).clear();
                 tree.set(i - 1, temp);
-                System.out.print("tree after the sublisted: ");
-                for (Node n : tree) {
-                    System.out.print(n.value);
-                }
-                System.out.print(";");
-                System.out.println(tree_print(temp));
-                System.out.println(tree.get(i - 1).value);
+
+
+
                 if (subroot.role.equals(Operators.INIT)) {
 
                     current = temp;
@@ -286,6 +292,7 @@ public class KnowledgeBase {
 
 
             } else {
+
                 if (tree.get(i).role.equals(Operators.SENTENCE)) {
 
                     if (subroot.role.equals(Operators.INIT)) {
@@ -302,7 +309,7 @@ public class KnowledgeBase {
 
                         subroot = tree.get(i);
                     }
-                    tree.remove(i + 1);
+//                    tree.remove(i + 1);
                     current = tree.get(i);
                     i++;
                 } else {
@@ -321,7 +328,7 @@ public class KnowledgeBase {
                         current = tree.get(i);
 
 
-                    } else if (order_compare.role.equals(Operators.SENTENCE)) {
+                    } else if (order_compare.role.equals(Operators.SENTENCE) || order_compare.role.equals(Operators.NOT)) {
                         tree.get(i).left = order_compare;
                         tree.get(i - 1).parent = tree.get(i);
                         tree.get(i + 1).parent = tree.get(i);
@@ -329,6 +336,8 @@ public class KnowledgeBase {
                         subroot = tree.get(i);
                         current = tree.get(i);
                     } else {
+
+
                         tree.get(i).left = order_compare.left.parent;
                         order_compare.right.parent.parent = tree.get(i);
                         tree.get(i).right = tree.get(i + 1);
@@ -363,6 +372,7 @@ public class KnowledgeBase {
 
         Stack<Node> stack = new Stack<>();
         stack.push(this.KB_root);
+        stack.push(this.target);
         while (!stack.empty()) {
             Node current = stack.pop();
             if (current.value.equals(variable)) {

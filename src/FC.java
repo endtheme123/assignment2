@@ -56,7 +56,7 @@ public class FC extends Algorithm {
         while (!agenda.isEmpty()) {
             Node p = agenda.poll();
             path = path + p.value + ";";
-            if (p.value.equals(kb.target)) {
+            if (p.value.equals(kb.target.value)) {
                 return true;
             }
             if (!inferred.get(p.value)) {
@@ -71,7 +71,7 @@ public class FC extends Algorithm {
 
 
                             agenda.add(c.conclusion);
-                            System.out.println(c.conclusion.value);
+//                            System.out.println(c.conclusion.value);
 
 
                         }
