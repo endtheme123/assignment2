@@ -6,7 +6,7 @@ public class Main {
     public static void main(String[] args) {
         // Press Alt+Enter with your caret at the highlighted text to see how
         // IntelliJ IDEA suggests fixing it.
-
+//        initialize the needed variables
         String filepath = "";
         String algo_name = "";
 
@@ -23,12 +23,15 @@ public class Main {
             System.out.println("invalid syntax");
             return;
         }
-
+//        create KB
         KnowledgeBase kb = new KnowledgeBase(filepath);
+//        run the engine
         InferenceEngine e = new InferenceEngine(kb,algo_name);
+//        get the result
         ArrayList<String> result = e.get_result();
+//        join the result
         String output = String.join("", result);
-
+//          print
         System.out.println(output);
     }
 }

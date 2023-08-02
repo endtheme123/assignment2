@@ -1,3 +1,5 @@
+
+//an enumeration of the number of operators
 enum Operators {
     INIT,
     LEFT_BRAC,

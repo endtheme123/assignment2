@@ -21,9 +21,9 @@ public class InferenceEngine {
 
     }
 
-    //    get the return path from the chosen algorithm
+    //    get the output from the chosen algorithm
     public ArrayList<String> get_result() {
-//        System.out.println("gg");
+
         ArrayList<String> result;
         if(main_algo!= null) {
             result = main_algo.calculate_result();
